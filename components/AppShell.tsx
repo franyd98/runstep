@@ -24,9 +24,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen bg-[#0d0d0d]">
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex w-60 min-w-60 bg-[#111111] border-r border-[#222] flex-col sticky top-0 h-screen">
-        <div className="flex items-center px-5 h-20 border-b border-[#222]">
-          <Logo size={28} />
+      <aside className="hidden md:flex w-64 min-w-64 bg-[#111111] border-r border-[#222] flex-col sticky top-0 h-screen">
+        <div className="flex items-center px-4 h-20 border-b border-[#222]">
+          <Logo size={24} />
         </div>
         <nav className="flex-1 p-3 flex flex-col gap-1 mt-2">
           {navItems.map(item => (
@@ -58,7 +58,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <div className="flex-1 flex flex-col min-h-screen">
         {/* Mobile header */}
         <header className="md:hidden flex items-center justify-between px-4 h-16 bg-[#111111] border-b border-[#222] sticky top-0 z-10">
-          <Logo size={22} />
+          <Logo size={20} />
           <button onClick={logout} className="text-[#555] text-sm">🚪</button>
         </header>
 
