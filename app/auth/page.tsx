@@ -95,19 +95,6 @@ export default function AuthPage() {
           </p>
         </div>
 
-        {/* Features */}
-        <div className="mt-8 grid grid-cols-3 gap-4 w-full max-w-sm">
-          {[
-            { icon: "📅", text: "Plan 12 semanas" },
-            { icon: "📊", text: "Estadísticas" },
-            { icon: "🎯", text: "Objetivos" },
-          ].map(f => (
-            <div key={f.text} className="flex flex-col items-center gap-1.5 bg-[#111] border border-[#222] rounded-2xl py-3 px-2">
-              <span className="text-xl">{f.icon}</span>
-              <span className="text-xs text-[#555] text-center font-medium">{f.text}</span>
-            </div>
-          ))}
-        </div>
       </div>
     </div>
   );
