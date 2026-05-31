@@ -19,6 +19,10 @@ const typeLabels: Record<string, string> = {
 const typeEmoji: Record<string, string> = {
   easy: "🟢", tempo: "🟣", interval: "🔴", fartlek: "🔵", long: "🟠", recovery: "⚪",
 };
+const dayOrder: Record<string, number> = {
+  "Lunes": 0, "Martes": 1, "Miércoles": 2, "Jueves": 3,
+  "Viernes": 4, "Sábado": 5, "Domingo": 6,
+};
 const tipsByType: Record<string, string> = {
   easy: "Corre a un ritmo en el que puedas mantener una conversación. No te preocupes por el tiempo, el objetivo es acumular km de forma suave.",
   tempo: "Ritmo moderado-alto que puedas sostener. Debes sentirte 'cómodamente incómodo'. Mejora tu umbral de lactato.",
@@ -49,7 +53,7 @@ export default function PlanPage() {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { router.replace("/auth"); return; }
-    const { data } = await supabase.from("training_plan").select("*").eq("user_id", user.id).order("week").order("id");
+    const { data } = await supabase.from("training_plan").select("*").eq("user_id", user.id).order("week");
     const plan = data || [];
     setPlan(plan);
     // Auto-select first week with incomplete sessions
@@ -67,7 +71,9 @@ export default function PlanPage() {
   };
 
   const weeks = Array.from(new Set(plan.map(s => s.week))).sort((a, b) => a - b);
-  const weekSessions = plan.filter(s => s.week === activeWeek);
+  const weekSessions = plan
+    .filter(s => s.week === activeWeek)
+    .sort((a, b) => (dayOrder[a.day] ?? 99) - (dayOrder[b.day] ?? 99));
   const completedCount = plan.filter(s => s.completed).length;
   const totalSessions = plan.length;
   const progressPct = totalSessions ? Math.round((completedCount / totalSessions) * 100) : 0;
