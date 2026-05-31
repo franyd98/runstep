@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import AppShell from "@/components/AppShell";
 import RunModal from "@/components/RunModal";
+import RouteMap from "@/components/RouteMap";
 import type { Run } from "@/lib/types";
 
 const typeColors: Record<string, string> = {
@@ -106,46 +107,66 @@ export default function HistorialPage() {
         </div>
 
         {filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24 text-[#8b90b0]">
+          <div className="flex flex-col items-center justify-center py-24 text-[#555]">
             <div className="text-5xl mb-4">🏃</div>
             <p>{runs.length === 0 ? "Aún no has registrado ninguna carrera." : "No hay resultados para este filtro."}</p>
           </div>
         ) : (
-          <div className="bg-[#141420] border border-[#2a2a42] rounded-2xl overflow-hidden">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-[#1e1e30]">
-                  {["Fecha", "Tipo", "Distancia", "Tiempo", "Ritmo", "FC Media", "FC Máx", "Desnivel", "Cadencia", ""].map(h => (
-                    <th key={h} className="text-left px-4 py-3 text-xs text-[#8b90b0] uppercase tracking-wide font-semibold border-b border-[#2a2a42]">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(run => (
-                  <tr key={run.id} className="hover:bg-[#1e1e30] transition-colors border-b border-[#2a2a42] last:border-0">
-                    <td className="px-4 py-3 text-sm">{run.date}</td>
-                    <td className="px-4 py-3">
+          <div className="flex flex-col gap-4">
+            {filtered.map(run => (
+              <div key={run.id} className="bg-[#111] border border-[#222] rounded-3xl overflow-hidden">
+                {/* Map if available */}
+                {(run as Run & { polyline?: string }).polyline && (
+                  <RouteMap polyline={(run as Run & { polyline?: string }).polyline!} />
+                )}
+                <div className="p-4">
+                  {/* Header */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
                       <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${typeColors[run.type]}`}>
                         {typeLabels[run.type]}
                       </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm font-medium">{run.distance} km</td>
-                    <td className="px-4 py-3 text-sm">{run.duration} min</td>
-                    <td className="px-4 py-3 text-sm font-medium text-[#CAFF00]">{pace(run.distance, run.duration)} /km</td>
-                    <td className="px-4 py-3 text-sm">{run.hr_avg ? `${run.hr_avg} ppm` : "—"}</td>
-                    <td className="px-4 py-3 text-sm">{run.hr_max ? `${run.hr_max} ppm` : "—"}</td>
-                    <td className="px-4 py-3 text-sm">{run.elevation ? `${run.elevation} m` : "—"}</td>
-                    <td className="px-4 py-3 text-sm">{run.cadence ? `${run.cadence} ppm` : "—"}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex gap-1">
-                        <button onClick={() => openEdit(run)} className="p-1.5 text-[#8b90b0] hover:text-white rounded-lg hover:bg-[#2a2a42] transition-all">✏️</button>
-                        <button onClick={() => deleteRun(run.id)} className="p-1.5 text-[#8b90b0] hover:text-red-400 rounded-lg hover:bg-red-400/10 transition-all">🗑️</button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      <span className="text-xs text-[#444]">{run.date}</span>
+                      {(run as Run & { polyline?: string }).polyline && (
+                        <span className="text-xs text-[#FC4C02] font-bold">⚡ Strava</span>
+                      )}
+                    </div>
+                    <div className="flex gap-1">
+                      <button onClick={() => openEdit(run)} className="p-1.5 text-[#444] hover:text-white rounded-xl hover:bg-[#1a1a1a] transition-all">✏️</button>
+                      <button onClick={() => deleteRun(run.id)} className="p-1.5 text-[#444] hover:text-red-400 rounded-xl hover:bg-red-400/10 transition-all">🗑️</button>
+                    </div>
+                  </div>
+                  {/* Stats grid */}
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="bg-[#1a1a1a] rounded-2xl p-3 text-center">
+                      <div className="text-[#CAFF00] font-black">{run.distance} km</div>
+                      <div className="text-xs text-[#444]">Distancia</div>
+                    </div>
+                    <div className="bg-[#1a1a1a] rounded-2xl p-3 text-center">
+                      <div className="font-black">{run.duration} min</div>
+                      <div className="text-xs text-[#444]">Tiempo</div>
+                    </div>
+                    <div className="bg-[#1a1a1a] rounded-2xl p-3 text-center">
+                      <div className="font-black">{pace(run.distance, run.duration)}</div>
+                      <div className="text-xs text-[#444]">min/km</div>
+                    </div>
+                    {run.hr_avg && <div className="bg-[#1a1a1a] rounded-2xl p-3 text-center">
+                      <div className="font-bold">{run.hr_avg} ppm</div>
+                      <div className="text-xs text-[#444]">FC media</div>
+                    </div>}
+                    {run.hr_max && <div className="bg-[#1a1a1a] rounded-2xl p-3 text-center">
+                      <div className="font-bold">{run.hr_max} ppm</div>
+                      <div className="text-xs text-[#444]">FC máx</div>
+                    </div>}
+                    {run.elevation ? <div className="bg-[#1a1a1a] rounded-2xl p-3 text-center">
+                      <div className="font-bold">{run.elevation} m</div>
+                      <div className="text-xs text-[#444]">Desnivel</div>
+                    </div> : null}
+                  </div>
+                  {run.notes && <p className="text-xs text-[#555] mt-3 italic">"{run.notes}"</p>}
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>

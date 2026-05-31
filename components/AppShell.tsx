@@ -9,6 +9,7 @@ const navItems = [
   { href: "/plan",      icon: "📅", label: "Plan" },
   { href: "/historial", icon: "📋", label: "Historial" },
   { href: "/progreso",  icon: "📈", label: "Progreso" },
+  { href: "/settings",  icon: "⚙️", label: "Ajustes" },
 ];
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
