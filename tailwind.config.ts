@@ -9,11 +9,13 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        brand: "#FF4D00",
-        "brand-dark": "#cc3d00",
-        surface: "#141420",
-        surface2: "#1e1e30",
-        border: "#2a2a42",
+        brand: "#CAFF00",
+        "brand-dark": "#a8d400",
+        "brand-muted": "#CAFF0020",
+        surface: "#111111",
+        surface2: "#1a1a1a",
+        surface3: "#222222",
+        border: "#2a2a2a",
       },
       fontFamily: {
         sans: ["Inter", "-apple-system", "sans-serif"],

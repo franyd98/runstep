@@ -19,6 +19,9 @@ const typeLabels: Record<string, string> = {
   easy: "Easy run", tempo: "Tempo", interval: "Intervalos",
   fartlek: "Fartlek", long: "Tirada larga", recovery: "Recuperación",
 };
+const typeEmoji: Record<string, string> = {
+  easy: "🟢", tempo: "🟣", interval: "🔴", fartlek: "🔵", long: "🟠", recovery: "⚪",
+};
 
 function pace(dist: number, time: number) {
   const p = time / dist;
@@ -32,6 +35,7 @@ export default function DashboardPage() {
   const [user, setUser] = useState<{ id: string } | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [runs, setRuns] = useState<Run[]>([]);
+  const [nextSession, setNextSession] = useState<Record<string, unknown> | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -41,26 +45,30 @@ export default function DashboardPage() {
     if (!user) { router.replace("/auth"); return; }
     setUser(user);
 
-    const [{ data: profile }, { data: runs }] = await Promise.all([
+    const [{ data: profile }, { data: runs }, { data: plan }] = await Promise.all([
       supabase.from("profiles").select("*").eq("user_id", user.id).single(),
       supabase.from("runs").select("*").eq("user_id", user.id).order("date", { ascending: false }),
+      supabase.from("training_plan").select("*").eq("user_id", user.id).eq("completed", false).order("week").limit(1),
     ]);
 
     if (!profile?.onboarding_done) { router.replace("/onboarding"); return; }
     setProfile(profile);
     setRuns(runs || []);
+    setNextSession(plan?.[0] || null);
     setLoading(false);
   };
 
   useEffect(() => { load(); }, []);
 
   if (loading) return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="text-[#8b90b0]">Cargando...</div>
+    <div className="flex items-center justify-center min-h-screen bg-[#0d0d0d]">
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-10 h-10 border-2 border-[#CAFF00] border-t-transparent rounded-full animate-spin"/>
+        <p className="text-[#555] text-sm">Cargando...</p>
+      </div>
     </div>
   );
 
-  // Week stats
   const now = new Date();
   const dayOfWeek = (now.getDay() + 6) % 7;
   const weekStart = new Date(now);
@@ -74,157 +82,164 @@ export default function DashboardPage() {
   const goalKm = (profile?.days_per_week || 3) * 8;
   const goalPct = Math.min(100, (weekDist / goalKm) * 100);
 
-  // Week grid
   const days = ["L", "M", "X", "J", "V", "S", "D"];
   const activeDays = new Set(weekRuns.map(r => (new Date(r.date + "T12:00:00").getDay() + 6) % 7));
   const todayIdx = (now.getDay() + 6) % 7;
-
   const lastRun = runs[0];
+
+  const hour = now.getHours();
+  const greeting = hour < 13 ? "Buenos días" : hour < 20 ? "Buenas tardes" : "Buenas noches";
 
   return (
     <AppShell>
-      <div className="p-8">
+      <div className="px-4 py-6 max-w-2xl mx-auto">
         {/* Greeting */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-start justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold">Hola, {profile?.name?.split(" ")[0]} 👋</h1>
-            <p className="text-[#8b90b0] text-sm mt-1">
-              {levelLabels[profile?.level || ""] || ""} · {goalLabels[profile?.goal || ""] || ""}
-            </p>
+            <p className="text-[#555] text-sm font-medium">{greeting} 👋</p>
+            <h1 className="text-2xl font-black mt-0.5">{profile?.name?.split(" ")[0]}</h1>
+            <p className="text-xs text-[#444] mt-1">{levelLabels[profile?.level || ""]} · {goalLabels[profile?.goal || ""]}</p>
           </div>
           <button
             onClick={() => setModalOpen(true)}
-            className="bg-[#FF4D00] hover:bg-[#cc3d00] text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-colors flex items-center gap-2"
+            className="bg-[#CAFF00] text-black font-bold px-4 py-2.5 rounded-2xl text-sm neon-glow active:scale-95 transition-transform"
           >
-            + Nueva carrera
+            + Añadir
           </button>
         </div>
 
-        {/* KPIs */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        {/* Next session banner */}
+        {nextSession && (
+          <div className="bg-[#CAFF00]/10 border border-[#CAFF00]/25 rounded-3xl p-5 mb-5">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs text-[#CAFF00] font-bold uppercase tracking-wider">Próxima sesión</span>
+              <span className="text-xs text-[#555]">Semana {nextSession.week as number}</span>
+            </div>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 bg-[#CAFF00]/20 rounded-2xl flex items-center justify-center text-lg">
+                {typeEmoji[nextSession.type as string] || "🏃"}
+              </div>
+              <div>
+                <div className="font-bold text-white">{typeLabels[nextSession.type as string]}</div>
+                <div className="text-xs text-[#555]">{nextSession.day as string}</div>
+              </div>
+              <div className="ml-auto text-right">
+                <div className="text-[#CAFF00] font-bold">{nextSession.target_distance as number} km</div>
+                <div className="text-xs text-[#555]">~{nextSession.target_duration as number} min</div>
+              </div>
+            </div>
+            <p className="text-sm text-[#888]">{nextSession.description as string}</p>
+          </div>
+        )}
+
+        {/* Week stats */}
+        <div className="grid grid-cols-3 gap-3 mb-5">
           {[
-            { label: "Distancia semana", value: `${weekDist.toFixed(1)} km` },
-            { label: "Tiempo semana", value: weekTime >= 60 ? `${Math.floor(weekTime/60)}h ${weekTime%60}min` : `${weekTime} min` },
-            { label: "Carreras semana", value: `${weekRuns.length}` },
-            { label: "Total km", value: `${totalDist.toFixed(0)} km` },
+            { label: "Esta semana", value: `${weekDist.toFixed(1)}`, unit: "km" },
+            { label: "Tiempo", value: weekTime >= 60 ? `${Math.floor(weekTime/60)}h${weekTime%60}` : `${weekTime}`, unit: "min" },
+            { label: "Total", value: `${totalDist.toFixed(0)}`, unit: "km" },
           ].map(k => (
-            <div key={k.label} className="bg-[#141420] border border-[#2a2a42] rounded-2xl p-5">
-              <div className="text-xs text-[#8b90b0] uppercase tracking-wide mb-2">{k.label}</div>
-              <div className="text-2xl font-bold">{k.value}</div>
+            <div key={k.label} className="bg-[#111] border border-[#222] rounded-2xl p-4 text-center">
+              <div className="text-xs text-[#444] mb-1 font-medium">{k.label}</div>
+              <div className="text-xl font-black text-white">{k.value}</div>
+              <div className="text-xs text-[#555]">{k.unit}</div>
             </div>
           ))}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {/* Week grid */}
-          <div className="bg-[#141420] border border-[#2a2a42] rounded-2xl p-5">
-            <div className="font-semibold mb-4">Días activos esta semana</div>
-            <div className="flex gap-2 mb-4">
-              {days.map((d, i) => (
-                <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
-                  <div className="text-xs text-[#8b90b0]">{d}</div>
-                  <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-medium border-2 transition-all ${
-                    activeDays.has(i)
-                      ? "bg-[#FF4D00] border-[#FF4D00] text-white"
-                      : i === todayIdx
-                      ? "border-[#FF4D00] text-[#FF4D00]"
-                      : "border-[#2a2a42] text-[#8b90b0]"
-                  }`}>
-                    {activeDays.has(i) ? "✓" : ""}
-                  </div>
-                </div>
-              ))}
-            </div>
-            {/* Goal bar */}
-            <div className="mt-2">
-              <div className="flex justify-between text-xs text-[#8b90b0] mb-1.5">
-                <span>Meta semanal</span>
-                <span>{weekDist.toFixed(1)} / {goalKm} km</span>
-              </div>
-              <div className="h-2 bg-[#1e1e30] rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-[#FF4D00] rounded-full transition-all duration-500"
-                  style={{ width: `${goalPct}%` }}
-                />
-              </div>
-            </div>
+        {/* Week grid */}
+        <div className="bg-[#111] border border-[#222] rounded-3xl p-5 mb-5">
+          <div className="flex items-center justify-between mb-4">
+            <span className="font-bold text-sm">Semana actual</span>
+            <span className="text-xs text-[#555]">{weekRuns.length} salidas</span>
           </div>
-
-          {/* Last run */}
-          <div className="bg-[#141420] border border-[#2a2a42] rounded-2xl p-5">
-            <div className="font-semibold mb-4">Última carrera</div>
-            {lastRun ? (
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${typeColors[lastRun.type]}`}>
-                    {typeLabels[lastRun.type]}
-                  </span>
-                  <span className="text-xs text-[#8b90b0]">{lastRun.date}</span>
+          <div className="flex gap-2 mb-4">
+            {days.map((d, i) => (
+              <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                <div className="text-xs text-[#444] font-medium">{d}</div>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all ${
+                  activeDays.has(i) ? "bg-[#CAFF00] border-[#CAFF00] text-black" :
+                  i === todayIdx ? "border-[#CAFF00] text-[#CAFF00]" :
+                  "border-[#222] text-[#333]"
+                }`}>
+                  {activeDays.has(i) ? "✓" : ""}
                 </div>
-                <div className="grid grid-cols-3 gap-3">
-                  {[
-                    { label: "Distancia", value: `${lastRun.distance} km` },
-                    { label: "Tiempo", value: `${lastRun.duration} min` },
-                    { label: "Ritmo", value: pace(lastRun.distance, lastRun.duration) + " /km" },
-                    { label: "FC media", value: lastRun.hr_avg ? `${lastRun.hr_avg} ppm` : "—" },
-                    { label: "FC máx", value: lastRun.hr_max ? `${lastRun.hr_max} ppm` : "—" },
-                    { label: "Cadencia", value: lastRun.cadence ? `${lastRun.cadence} ppm` : "—" },
-                  ].map(s => (
-                    <div key={s.label} className="bg-[#1e1e30] rounded-xl p-3">
-                      <div className="text-xs text-[#8b90b0] mb-1">{s.label}</div>
-                      <div className="text-sm font-semibold">{s.value}</div>
-                    </div>
-                  ))}
-                </div>
-                {lastRun.notes && (
-                  <p className="text-sm text-[#8b90b0] mt-3 italic">"{lastRun.notes}"</p>
-                )}
               </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-32 text-[#8b90b0]">
-                <div className="text-3xl mb-2">🏃</div>
-                <p className="text-sm">Aún no has registrado ninguna carrera</p>
-              </div>
-            )}
+            ))}
+          </div>
+          <div>
+            <div className="flex justify-between text-xs text-[#444] mb-1.5">
+              <span>Meta semanal</span>
+              <span className="text-[#CAFF00] font-semibold">{weekDist.toFixed(1)} / {goalKm} km</span>
+            </div>
+            <div className="h-2 bg-[#1a1a1a] rounded-full overflow-hidden">
+              <div className="h-full bg-[#CAFF00] rounded-full transition-all duration-700" style={{ width: `${goalPct}%` }}/>
+            </div>
           </div>
         </div>
 
-        {/* Recent runs */}
-        {runs.length > 0 && (
-          <div className="bg-[#141420] border border-[#2a2a42] rounded-2xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-[#2a2a42] font-semibold">Carreras recientes</div>
-            <div className="divide-y divide-[#2a2a42]">
-              {runs.slice(0, 5).map(run => (
-                <div key={run.id} className="flex items-center gap-4 px-6 py-4 hover:bg-[#1e1e30] transition-colors">
-                  <div className="flex-shrink-0 w-10 h-10 bg-[#1e1e30] rounded-xl flex items-center justify-center text-lg">
-                    {run.type === "easy" ? "🟢" : run.type === "long" ? "🟠" : run.type === "interval" ? "🔴" : run.type === "tempo" ? "🟣" : run.type === "fartlek" ? "🔵" : "⚪"}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${typeColors[run.type]}`}>
-                        {typeLabels[run.type]}
-                      </span>
-                      <span className="text-xs text-[#8b90b0]">{run.date}</span>
-                    </div>
-                    {run.notes && <p className="text-xs text-[#8b90b0] mt-0.5 truncate">{run.notes}</p>}
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <div className="font-semibold">{run.distance} km</div>
-                    <div className="text-xs text-[#8b90b0]">{pace(run.distance, run.duration)} /km</div>
-                  </div>
+        {/* Last run */}
+        {lastRun && (
+          <div className="bg-[#111] border border-[#222] rounded-3xl p-5 mb-5">
+            <div className="flex items-center justify-between mb-4">
+              <span className="font-bold text-sm">Última carrera</span>
+              <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${typeColors[lastRun.type]}`}>
+                {typeLabels[lastRun.type]}
+              </span>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { label: "Distancia", value: `${lastRun.distance} km` },
+                { label: "Tiempo", value: `${lastRun.duration} min` },
+                { label: "Ritmo", value: `${pace(lastRun.distance, lastRun.duration)} /km` },
+                { label: "FC media", value: lastRun.hr_avg ? `${lastRun.hr_avg} ppm` : "—" },
+                { label: "FC máx", value: lastRun.hr_max ? `${lastRun.hr_max} ppm` : "—" },
+                { label: "Cadencia", value: lastRun.cadence ? `${lastRun.cadence} ppm` : "—" },
+              ].map(s => (
+                <div key={s.label} className="bg-[#1a1a1a] rounded-2xl p-3">
+                  <div className="text-xs text-[#444] mb-1">{s.label}</div>
+                  <div className="text-sm font-bold">{s.value}</div>
                 </div>
               ))}
             </div>
+            {lastRun.notes && (
+              <p className="text-sm text-[#555] mt-3 italic">"{lastRun.notes}"</p>
+            )}
+          </div>
+        )}
+
+        {/* Recent runs */}
+        {runs.length > 1 && (
+          <div className="bg-[#111] border border-[#222] rounded-3xl overflow-hidden">
+            <div className="px-5 py-4 border-b border-[#1a1a1a]">
+              <span className="font-bold text-sm">Carreras recientes</span>
+            </div>
+            {runs.slice(1, 6).map(run => (
+              <div key={run.id} className="flex items-center gap-3 px-5 py-3.5 border-b border-[#1a1a1a] last:border-0">
+                <span className="text-xl">{typeEmoji[run.type]}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-semibold">{run.distance} km</div>
+                  <div className="text-xs text-[#444]">{run.date} · {run.duration} min</div>
+                </div>
+                <div className="text-sm font-bold text-[#CAFF00]">{pace(run.distance, run.duration)}<span className="text-xs text-[#444] font-normal"> /km</span></div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {runs.length === 0 && (
+          <div className="bg-[#111] border border-[#222] rounded-3xl p-10 text-center">
+            <div className="text-5xl mb-3">🏃</div>
+            <p className="font-bold mb-1">¡Aún no has registrado ninguna carrera!</p>
+            <p className="text-sm text-[#555] mb-5">Pulsa "+ Añadir" después de cada entrenamiento</p>
+            <button onClick={() => setModalOpen(true)} className="bg-[#CAFF00] text-black font-bold px-6 py-3 rounded-2xl text-sm neon-glow">
+              Registrar primera carrera
+            </button>
           </div>
         )}
       </div>
 
-      <RunModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onSaved={load}
-        userId={user?.id || ""}
-      />
+      <RunModal open={modalOpen} onClose={() => setModalOpen(false)} onSaved={load} userId={user?.id || ""} />
     </AppShell>
   );
 }

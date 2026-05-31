@@ -2,25 +2,27 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&display=swap');
 
 body {
-  background-color: #0a0a0f;
-  color: #e8eaf6;
-  font-family: 'Inter', -apple-system, sans-serif;
+  background-color: #0d0d0d;
+  color: #f0f0f0;
+  font-family: 'Space Grotesk', -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
 /* Scrollbar */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: #0a0a0f; }
-::-webkit-scrollbar-thumb { background: #2a2a42; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #3a3a58; }
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: #0d0d0d; }
+::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 4px; }
 
 /* Inputs */
-input, select, textarea {
-  outline: none;
-}
+input, select, textarea { outline: none; }
 input:-webkit-autofill {
-  -webkit-box-shadow: 0 0 0 100px #1e1e30 inset;
-  -webkit-text-fill-color: #e8eaf6;
+  -webkit-box-shadow: 0 0 0 100px #1a1a1a inset;
+  -webkit-text-fill-color: #f0f0f0;
 }
+
+/* Neon glow */
+.neon-glow { box-shadow: 0 0 20px rgba(202,255,0,0.3), 0 0 40px rgba(202,255,0,0.1); }
+.neon-text { text-shadow: 0 0 20px rgba(202,255,0,0.5); }
