@@ -1,10 +1,10 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase";
 import AppShell from "@/components/AppShell";
 
-export default function SettingsPage() {
+function SettingsContent() {
   const router = useRouter();
   const params = useSearchParams();
   const [stravaConnected, setStravaConnected] = useState(false);
@@ -167,5 +167,13 @@ export default function SettingsPage() {
         </div>
       </div>
     </AppShell>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={null}>
+      <SettingsContent />
+    </Suspense>
   );
 }
