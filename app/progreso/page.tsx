@@ -128,8 +128,8 @@ export default function ProgresoPage() {
                 labels: months,
                 datasets: [{
                   data: months.map(m => parseFloat(byMonth[m].toFixed(2))),
-                  backgroundColor: "#FF4D0099",
-                  borderColor: "#FF4D00",
+                  backgroundColor: "#CAFF0099",
+                  borderColor: "#CAFF00",
                   borderWidth: 2,
                   borderRadius: 6,
                 }],

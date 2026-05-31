@@ -80,7 +80,7 @@ export default function HistorialPage() {
           </div>
           <button
             onClick={() => { setEditRun(null); setModalOpen(true); }}
-            className="bg-[#FF4D00] hover:bg-[#cc3d00] text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-colors"
+            className="bg-[#CAFF00] hover:bg-[#b8e600] text-black font-bold px-5 py-2.5 rounded-2xl text-sm transition-colors neon-glow"
           >
             + Nueva carrera
           </button>
@@ -93,12 +93,12 @@ export default function HistorialPage() {
             placeholder="🔍 Buscar..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="bg-[#141420] border border-[#2a2a42] rounded-xl px-4 py-2 text-sm focus:border-[#FF4D00] transition-colors w-52"
+            className="bg-[#141420] border border-[#2a2a42] rounded-xl px-4 py-2 text-sm focus:border-[#CAFF00] transition-colors w-52"
           />
           <select
             value={typeFilter}
             onChange={e => setTypeFilter(e.target.value)}
-            className="bg-[#141420] border border-[#2a2a42] rounded-xl px-4 py-2 text-sm focus:border-[#FF4D00] transition-colors"
+            className="bg-[#141420] border border-[#2a2a42] rounded-xl px-4 py-2 text-sm focus:border-[#CAFF00] transition-colors"
           >
             <option value="all">Todos los tipos</option>
             {Object.entries(typeLabels).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
@@ -131,7 +131,7 @@ export default function HistorialPage() {
                     </td>
                     <td className="px-4 py-3 text-sm font-medium">{run.distance} km</td>
                     <td className="px-4 py-3 text-sm">{run.duration} min</td>
-                    <td className="px-4 py-3 text-sm font-medium text-[#FF4D00]">{pace(run.distance, run.duration)} /km</td>
+                    <td className="px-4 py-3 text-sm font-medium text-[#CAFF00]">{pace(run.distance, run.duration)} /km</td>
                     <td className="px-4 py-3 text-sm">{run.hr_avg ? `${run.hr_avg} ppm` : "—"}</td>
                     <td className="px-4 py-3 text-sm">{run.hr_max ? `${run.hr_max} ppm` : "—"}</td>
                     <td className="px-4 py-3 text-sm">{run.elevation ? `${run.elevation} m` : "—"}</td>
